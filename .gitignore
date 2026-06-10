@@ -1,0 +1,43 @@
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+
+# 临时文件
+*.tmp
+*.log
+*.bak
+
+# 压缩包
+*.zip
+*.rar
+*.7z
+
+# 大文件/数据
+data/
+datasets/
+models/
+checkpoints/
+*.pth
+*.pt
+*.onnx
+*.h5
+
+# 隐私材料
+resume/
+cv/
+transcripts/
+recommendation_letters/
+personal/
+private/
