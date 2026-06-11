@@ -1,0 +1,118 @@
+(.venv) PS E:\申博材料\机器人相关学习\阶段一_基础补齐\01_FilterPy状态估计_移动机器人定位\source\filterpy> python -m pytest .\filterpy\kalman\tests\test_kf.py
+=================================================== test session starts ===================================================
+platform win32 -- Python 3.13.13, pytest-9.0.3, pluggy-1.6.0
+rootdir: E:\申博材料\机器人相关学习\阶段一_基础补齐\01_FilterPy状态估计_移动机器人定位\source\filterpy
+plugins: anyio-4.13.0
+collected 14 items
+
+filterpy\kalman\tests\test_kf.py F......F......                                                                      [100%]
+
+======================================================== FAILURES =========================================================
+______________________________________________________ test_noisy_1d ______________________________________________________
+
+    def test_noisy_1d():
+        f = KalmanFilter(dim_x=2, dim_z=1)
+
+        f.x = np.array([[2.],
+                        [0.]])       # initial state (location and velocity)
+
+        f.F = np.array([[1., 1.],
+                        [0., 1.]])    # state transition matrix
+
+        f.H = np.array([[1., 0.]])    # Measurement function
+        f.P *= 1000.                  # covariance matrix
+        f.R = 5                       # state uncertainty
+        f.Q = 0.0001                  # process uncertainty
+
+        measurements = []
+        results = []
+
+        zs = []
+        for t in range(100):
+            # create measurement = t plus white noise
+            z = t + random.randn()*20
+            zs.append(z)
+
+            # perform kalman filtering
+            f.update(z)
+            f.predict()
+
+            # save data
+            results.append(f.x[0, 0])
+            measurements.append(z)
+
+            # test mahalanobis
+            a = np.zeros(f.y.shape)
+            maha = mahalanobis(a, f.y, f.S)
+>           assert f.mahalanobis == approx(maha)
+                   ^^^^^^^^^^^^^
+
+filterpy\kalman\tests\test_kf.py:125:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <[TypeError('only 0-dimensional arrays can be converted to Python scalars') raised in repr()] KalmanFilter object at 0x11736b096a0>
+
+    @property
+    def mahalanobis(self):
+        """"
+        Mahalanobis distance of measurement. E.g. 3 means measurement
+        was 3 standard deviations away from the predicted value.
+
+        Returns
+        -------
+        mahalanobis : float
+        """
+        if self._mahalanobis is None:
+>           self._mahalanobis = sqrt(float(dot(dot(self.y.T, self.SI), self.y)))
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: only 0-dimensional arrays can be converted to Python scalars
+
+filterpy\kalman\kalman_filter.py:1238: TypeError
+____________________________________________________ test_steadystate _____________________________________________________
+
+    def test_steadystate():
+
+        dim = 7
+
+        cv = kinematic_kf(dim=dim, order=5)
+>       print(cv)
+
+filterpy\kalman\tests\test_kf.py:433:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+filterpy\kalman\kalman_filter.py:1294: in __repr__
+    pretty_str('mahalanobis', self.mahalanobis),
+                              ^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <[TypeError('only 0-dimensional arrays can be converted to Python scalars') raised in repr()] KalmanFilter object at 0x11717760e90>
+
+    @property
+    def mahalanobis(self):
+        """"
+        Mahalanobis distance of measurement. E.g. 3 means measurement
+        was 3 standard deviations away from the predicted value.
+
+        Returns
+        -------
+        mahalanobis : float
+        """
+        if self._mahalanobis is None:
+>           self._mahalanobis = sqrt(float(dot(dot(self.y.T, self.SI), self.y)))
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: only 0-dimensional arrays can be converted to Python scalars
+
+filterpy\kalman\kalman_filter.py:1238: TypeError
+==================================================== warnings summary =====================================================
+filterpy\discrete_bayes\discrete_bayes.py:22
+  E:\申博材料\机器人相关学习\阶段一_基础补齐\01_FilterPy状态估计_移动机器人定位\source\filterpy\filterpy\discrete_bayes\discrete_bayes.py:22: DeprecationWarning: Please import `convolve` from the `scipy.ndimage` namespace; the `scipy.ndimage.filters` namespace is deprecated and will be removed in SciPy 2.0.0.
+    from scipy.ndimage.filters import convolve
+
+filterpy\discrete_bayes\discrete_bayes.py:23
+  E:\申博材料\机器人相关学习\阶段一_基础补齐\01_FilterPy状态估计_移动机器人定位\source\filterpy\filterpy\discrete_bayes\discrete_bayes.py:23: DeprecationWarning: Please import `shift` from the `scipy.ndimage` namespace; the `scipy.ndimage.interpolation` namespace is deprecated and will be removed in SciPy 2.0.0.
+    from scipy.ndimage.interpolation import shift
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================================================= short test summary info =================================================
+FAILED filterpy/kalman/tests/test_kf.py::test_noisy_1d - TypeError: only 0-dimensional arrays can be converted to Python scalars
+FAILED filterpy/kalman/tests/test_kf.py::test_steadystate - TypeError: only 0-dimensional arrays can be converted to Python scalars
+======================================== 2 failed, 12 passed, 2 warnings in 2.35s =========================================
