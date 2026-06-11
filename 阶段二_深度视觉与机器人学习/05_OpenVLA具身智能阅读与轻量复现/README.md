@@ -1,38 +1,56 @@
 # 05 OpenVLA 具身智能阅读与轻量复现
 
-本项目暂时只建立占位目录和学习计划，不拉取 OpenVLA 源码。
+项目时间：2026-07-04 到 2026-07-06，Day 23 到 Day 25。
+
+本项目暂时只保留学习计划和空目录，不提前拉取 OpenVLA 源码。
 
 项目目标：
 
 ```text
-理解 Vision-Language-Action model 如何把视觉观测、语言指令和机器人动作连接起来。
+理解 Vision-Language-Action model 如何把图像、语言指令和机器人动作连接起来。
 ```
 
-专业表述：
+最终项目标题：
 
 ```text
 Vision-Language-Action Models for Robotic Manipulation
 ```
 
-参考项目与论文：
+参考：
 
 - https://github.com/openvla/openvla
 - https://openvla.github.io/
 - https://arxiv.org/abs/2406.09246
 
-## 时间计划：Day 27 到 Day 28
+## 1. 3 天执行计划
 
-| 日期 | 天数 | 学什么 | 怎么学 | 学到什么程度 | 如何检验 |
+| 日期 | 天数 | 学什么 | 怎么学 | 学明白的指标 | 当天验收 |
 |---|---:|---|---|---|---|
-| 2026-07-08 | Day 27 | VLA 基本概念 | 阅读 OpenVLA 项目页和论文摘要；理解 vision、language、action 三部分 | 能解释 VLA 和普通视觉模型的区别 | 完成 `notes/openvla_reading.md` |
-| 2026-07-09 | Day 28 | 轻量复现边界 | 阅读推理、LoRA、数据格式说明；判断本机是否适合跑 | 能写出“不全量训练，只做推理/阅读/轻量计划”的理由 | 完成 `notes/lightweight_reproduction_plan.md` |
+| 2026-07-04 | Day 23 | VLA 基本概念 | 阅读 OpenVLA 项目页、README、论文摘要；只关注 vision/language/action 三个输入输出关系 | 能解释 VLA 和普通视觉模型、普通 LLM 的区别 | `notes/day23_vla_overview.md` |
+| 2026-07-05 | Day 24 | 推理和数据格式 | 阅读 inference、fine-tuning、数据格式说明；判断本机是否适合跑 | 能说明为什么不做全量训练，只做轻量推理/阅读 | `notes/day24_inference_and_data.md` |
+| 2026-07-06 | Day 25 | 和前面项目串联 | 把 KF、视觉伺服、BC、Diffusion Policy、OpenVLA 画成技术路线图 | 能讲清楚你从视觉测量走向具身智能的逻辑 | `figures/vision_guided_embodied_ai_roadmap.png` 或 `notes/day25_roadmap.md` |
 
-## 最低掌握标准
+## 2. 最低完成标准
 
-- 能解释 VLA 是把图像、语言指令映射到机器人动作。
-- 能说明完整训练为什么需要大规模数据和 GPU。
-- 能把项目包装为 `embodied AI and robot foundation models`。
+必须有：
 
-## 后续再做
+```text
+notes/day23_vla_overview.md
+notes/day24_inference_and_data.md
+notes/day25_roadmap.md
+notes/interview_qa.md
+```
 
-进入本项目当天再决定是否新建 `source/` 并拉取源码。现在不要提前下载。
+能回答：
+
+- Vision-Language-Action 中 vision、language、action 分别是什么？
+- VLA 和 Diffusion Policy 的区别是什么？
+- 为什么 OpenVLA 完整训练成本高？
+- 你目前能做的轻量复现边界是什么？
+- 它如何连接你的视觉伺服和模仿学习项目？
+
+## 3. CV 表述
+
+```text
+Studied OpenVLA and Vision-Language-Action models for robotic manipulation, focusing on how visual observations and language instructions are mapped to robot actions in embodied AI systems.
+```

@@ -1,6 +1,8 @@
 # 04 Diffusion Policy 视觉运动策略复现
 
-本项目暂时只建立占位目录和学习计划，不拉取 Diffusion Policy 源码。
+项目时间：2026-06-29 到 2026-07-03，Day 18 到 Day 22。
+
+本项目暂时只保留学习计划和空目录，不提前拉取 Diffusion Policy 源码。
 
 项目目标：
 
@@ -8,31 +10,50 @@
 理解 diffusion-based visuomotor policy 如何根据视觉观测生成连续动作轨迹。
 ```
 
-专业表述：
+最终项目标题：
 
 ```text
-Diffusion-Based Visuomotor Policy Learning
+Diffusion-Based Visuomotor Policy Learning for Robotic Manipulation
 ```
 
-参考项目与论文：
+参考：
 
 - https://github.com/real-stanford/diffusion_policy
 - https://diffusion-policy.cs.columbia.edu/
 - https://arxiv.org/abs/2303.04137
 
-## 时间计划：Day 25 到 Day 26
+## 1. 5 天执行计划
 
-| 日期 | 天数 | 学什么 | 怎么学 | 学到什么程度 | 如何检验 |
+| 日期 | 天数 | 学什么 | 怎么学 | 学明白的指标 | 当天验收 |
 |---|---:|---|---|---|---|
-| 2026-07-06 | Day 25 | Diffusion Policy 方法 | 读论文摘要、方法图、系统框架；重点理解视觉条件和动作序列 | 能解释为什么 diffusion 可以生成一段动作轨迹 | 完成 `notes/diffusion_policy_reading.md` |
-| 2026-07-07 | Day 26 | 复现计划 | 阅读 GitHub 目录结构和任务说明；选择低成本仿真任务 | 能确定是否需要 GPU、数据集、环境和预计输出 | 完成 `notes/reproduction_plan.md` |
+| 2026-06-29 | Day 18 | 方法整体 | 读论文摘要、方法图和 project page；只关注输入、输出和任务 | 能解释 Diffusion Policy 是用 diffusion 生成动作序列 | `notes/day18_diffusion_policy_overview.md` |
+| 2026-06-30 | Day 19 | 动作序列和 receding horizon | 学 action horizon、prediction horizon、receding horizon control | 能画出“观测 -> 多步动作 -> 执行前几步 -> 再规划”流程 | `figures/diffusion_policy_pipeline.png` 或 `notes/day19_action_horizon.md` |
+| 2026-07-01 | Day 20 | 数据格式和代码结构 | 阅读 GitHub 目录结构、配置、数据集说明 | 能说清楚数据从哪里来、policy 如何训练 | `notes/day20_code_structure.md` |
+| 2026-07-02 | Day 21 | 低成本复现任务选择 | 选择一个最小任务；判断是否需要 GPU、仿真环境、数据下载 | 能写出复现命令、输入输出、预计指标 | `notes/day21_reproduction_plan.md` |
+| 2026-07-03 | Day 22 | 项目整理 | 整理方法理解、复现边界、CV bullet、面试问答 | 能把项目讲成 vision-conditioned action generation | `notes/interview_qa.md`；README 中有项目总结 |
 
-## 最低掌握标准
+## 2. 最低完成标准
 
-- 能解释 `observation`、`action horizon`、`denoising`、`receding horizon control`。
-- 能说明它和普通 behavior cloning 的区别。
-- 能把项目包装为 `vision-conditioned action generation for robotic manipulation`。
+必须有：
 
-## 后续再做
+```text
+notes/day18_diffusion_policy_overview.md
+notes/day19_action_horizon.md
+notes/day20_code_structure.md
+notes/day21_reproduction_plan.md
+notes/interview_qa.md
+```
 
-进入本项目当天再决定是否新建 `source/` 并拉取源码。现在不要提前下载。
+能回答：
+
+- Diffusion Policy 和普通 behavior cloning 有什么区别？
+- 为什么输出一段动作序列，而不是单步动作？
+- 什么是 receding horizon control？
+- 视觉观测如何条件化动作生成？
+- 这个方法适合哪些机器人 manipulation 任务？
+
+## 3. CV 表述
+
+```text
+Analyzed and prepared a lightweight reproduction of Diffusion Policy for visuomotor robot learning, focusing on vision-conditioned action sequence generation and receding-horizon control for robotic manipulation.
+```
