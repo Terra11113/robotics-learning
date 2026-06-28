@@ -837,25 +837,25 @@ The 2D Kalman Filter demo estimates a mobile robot trajectory with state [px, py
 
 ```text
 完成日期： 2026/6/27
-实际投入时间： 
+实际投入时间：请根据实际情况填写
 脚本是否能够完整运行：Y
 是否生成轨迹图：Y
 是否生成误差图：Y
 是否生成 RMSE 表：Y
-运行时遇到的问题：
-问题如何解决：
+运行时遇到的问题：脚本重新运行并覆盖 results/kf_2d_rmse.csv 时，如果该 CSV 正被 Excel 或其他程序打开，会出现 PermissionError。
+问题如何解决：关闭正在占用 kf_2d_rmse.csv 的程序，再重新运行脚本。
 ```
 
 ### 13.2 本次实验设置
 
 ```text
-状态向量 x：[x位置, x速度, y位置, y速度]^T
+状态向量 x：[x位置, y位置, x速度, y速度]^T，即 [px, py, vx, vy]^T
 观测向量 z：[x位置测量, y位置测量]^T
 dt：1.0
 num_steps：80
-initial_position：([0.0, 0.0])
-true_velocity：([1.0, 1.0])
-initial_velocity_guess：([0.0, 1.0])
+initial_position：[0.0, 0.0]
+true_velocity：[1.0, 1.0]
+initial_velocity_guess：[0.0, 0.0]
 measurement_noise_std：4.0
 process_noise_var：0.01
 random_seed：42
@@ -866,35 +866,35 @@ random_seed：42
 状态向量为什么定义为 `[px, py, vx, vy]`：
 
 ```text
-采用这种排列方式，
-可以把二维运动拆分成两个相互独立的一维匀速运动子模型：
-[px, vx]ᵀ描述x方向运动，[py, vy]ᵀ描述y方向运动，便于使用分块对角
-形式构造状态转移矩阵F和过程噪声矩阵Q。
+状态向量按照 [px, py, vx, vy] 排列，其中前两个分量描述二维位置，
+后两个分量描述二维速度。这样既能通过位置测量修正 px、py，也能通过
+连续位置变化和状态协方差间接估计 vx、vy。当前脚本的 F、H、P、Q 都按
+这个顺序构造，因此 estimates[:, :2] 表示估计的二维位置。
 ```
 
 状态转移矩阵 `F` 每一行的含义：
 
 ```text
-第 1 行：下一时刻x方向位置
-第 2 行：下一时刻y方向位置
-第 3 行：下一时刻x方向速度
-第 4 行：下一时刻y方向速度
+第 1 行：px(k+1) = px(k) + vx(k) * dt，预测下一时刻 x 方向位置。
+第 2 行：py(k+1) = py(k) + vy(k) * dt，预测下一时刻 y 方向位置。
+第 3 行：vx(k+1) = vx(k)，假设 x 方向速度保持不变。
+第 4 行：vy(k+1) = vy(k)，假设 y 方向速度保持不变。
 ```
 
 观测矩阵 `H` 为什么是 `2x4`：
 
 ```text
-状态向量x包含4个状态量：[px, vx, py, vy]ᵀ，因此H需要有4列；
+状态向量x包含4个状态量：[px, py, vx, vy]ᵀ，因此H需要有4列；
 传感器输出二维位置测量z=[zx, zy]ᵀ，因此H需要有2行。
 
 H的第1行[1, 0, 0, 0]从状态向量中提取x方向位置px；
-H的第2行[0, 0, 1, 0]从状态向量中提取y方向位置py。
+H的第2行[0, 1, 0, 0]从状态向量中提取y方向位置py。
 
 因此H的维度为2×4，并满足z=Hx，即：
 
 [zx]   [1 0 0 0] [px]
-[zy] = [0 0 1 0] [vx]
-                  [py]
+[zy] = [0 1 0 0] [py]
+                  [vx]
                   [vy]
 ```
 
@@ -916,10 +916,10 @@ px(k+1)=px(k)+vx(k)·dt。当新的位置测量到来后，滤波器计算测量
 从 `results/kf_2d_rmse.csv` 填写：
 
 ```text
-Noisy measurement RMSE：'5.670086830451101
-Kalman filter RMSE：'2.553739005469784
-RMSE 降低量：3.116347825
-RMSE 降低百分比：0.549612011
+Noisy measurement RMSE：5.670086830451101
+Kalman filter RMSE：2.553739005469784
+RMSE 降低量：3.116347824981317
+RMSE 降低百分比：54.96%
 ```
 
 RMSE 降低百分比计算：
@@ -939,7 +939,7 @@ RMSE 降低百分比计算：
 
 3. Kalman estimate 与 ground truth 的接近程度：Kalman estimate 整体紧贴 ground truth。相比离散且波动较大的测量点，估计轨迹更加连续、平滑，说明滤波器有效融合了匀速运动模型和位置测量。
 
-4. 初始阶段是否存在明显偏差，原因是什么：初始阶段存在较明显偏差。一方面，初始 x 方向速度估计为 0，与真实速度 1.0 不一致；另一方面，最初几个位置测量本身带有较大噪声。随着测量数据不断输入，滤波器逐渐修正位置和速度估计，轨迹随后收敛到真实轨迹附近。
+4. 初始阶段是否存在明显偏差，原因是什么：初始阶段存在较明显偏差。一方面，初始 x、y 方向速度估计均为 0，与真实速度 [1.0, 1.0] 不一致；另一方面，最初几个位置测量本身带有较大噪声。随着测量数据不断输入，滤波器逐渐修正位置和速度估计，轨迹随后收敛到真实轨迹附近。
 ```
 
 对 `figures/kf_2d_position_error.png` 的分析：
@@ -951,51 +951,53 @@ RMSE 降低百分比计算：
 
 3. 哪些时刻滤波误差仍然较大：初始阶段滤波误差较大，随后快速下降。中后期仍有小幅波动，这是因为滤波器需要在带噪测量和运动模型之间进行权衡，但其波动幅度明显小于测量误差。
 
-4. 整体上是否支持 KF 改善定位结果：
+4. 整体上是否支持 KF 改善定位结果：支持。测量位置 RMSE 为 5.6701，滤波位置 RMSE 为 2.5537，降低约 54.96%。误差图中 Kalman filter error 在大部分时间低于 measurement error，轨迹图中估计轨迹也比测量散点更连续并更接近 ground truth。
 ```
 
 ### 13.6 参数影响
 
 ```text
-P 初始值设置为：
-这个值表示：
+P 初始值设置为：np.eye(4) * 500.0
+这个值表示：滤波器对初始位置和速度估计很不确定，因此初期会较快地根据测量值修正状态。
 
-Q 设置为：
-Q 增大后预计会发生：
+Q 设置为：np.eye(4) * 0.01
+Q 增大后预计会发生：滤波器降低对匀速运动模型的信任，更快响应状态变化，但估计轨迹可能更容易受到测量噪声影响，平滑程度降低。
 
-R 设置为：
-R 增大后预计会发生：
+R 设置为：np.eye(2) * 4 ** 2
+R 增大后预计会发生：滤波器降低对位置测量的信任，估计结果会更平滑，但响应速度变慢，可能出现更明显的滞后。
 ```
 
 如果你实际修改过参数，记录一组对比：
 
 ```text
-修改前参数：
-修改前 RMSE：
-修改后参数：
-修改后 RMSE：
-我的结论：
+修改前参数：P = 500 * I(4)，Q = 0.01 * I(4)，measurement_noise_std = 4.0，R = 16 * I(2)
+修改前 RMSE：measurement RMSE = 5.6701，Kalman filter RMSE = 2.5537
+修改后参数：本次未进行独立参数对比实验
+修改后 RMSE：无
+我的结论：当前参数已经使 KF RMSE 明显低于测量 RMSE；后续可固定随机种子，分别改变 Q 和 R，验证“相信模型”和“相信测量”的权衡。
 ```
 
 ### 13.7 代码检查
 
 ```text
-ground truth shape：
-measurements shape：
-estimates shape：
-F shape：
-H shape：
-P shape：
-Q shape：
-R shape：
+ground truth shape：(80, 2)
+measurements shape：(80, 2)
+estimates shape：(80, 4)
+F shape：(4, 4)
+H shape：(2, 4)
+P shape：(4, 4)
+Q shape：(4, 4)
+R shape：(2, 2)
 ```
 
 我认为代码中还可以改进的地方：
 
 ```text
-1.
-2.
-3.
+1. 输出文件名和实验参数应集中在 main() 或配置区，方便调参后区分不同实验结果。
+2. 删除 main() 中创建后未使用的 kf 变量，避免重复初始化造成理解混乱。
+3. 用 Path(__file__).resolve() 推导项目根目录，避免脚本依赖当前 PowerShell 所在目录。
+4. 当前 Q = 0.01 * I(4) 是简化模型，后续可改成与 dt 和加速度噪声相关的二维匀速过程噪声矩阵。
+5. 每次保存图片后调用 plt.close()，避免批量运行时累积 figure。
 ```
 
 ### 13.8 必答问题
@@ -1003,31 +1005,47 @@ R shape：
 1. 1D KF 到 2D KF，本质上增加了什么？
 
 ```text
-在这里填写。
+本质上增加了状态和观测的维度。1D KF只估计一个方向的位置和速度，
+状态通常为[位置, 速度]；2D KF需要同时估计x、y两个方向，当前实验
+状态为[px, py, vx, vy]。因此F、H、P、Q、R等矩阵的维度也相应扩大，
+但predict和update的基本公式没有改变。
 ```
 
 2. 为什么状态中需要速度，但观测中只有位置？
 
 ```text
-在这里填写。
+速度是描述机器人运动规律所必需的状态。状态转移模型利用速度预测
+下一时刻的位置。传感器虽然只直接测量位置，但滤波器可以根据连续
+时刻的位置变化，以及位置和速度误差之间的相关性，间接估计vx和vy。
 ```
 
 3. `predict()` 和 `update()` 在本实验中分别使用了什么信息？
 
 ```text
-在这里填写。
+predict()使用上一时刻的状态x、状态协方差P、状态转移矩阵F和过程
+噪声Q，根据运动模型预测当前状态及其不确定性。
+
+update()使用当前传感器测量z、观测矩阵H和测量噪声R，计算测量残差
+和卡尔曼增益，再用测量信息修正预测状态x和协方差P。
 ```
 
 4. 如果 Kalman filter RMSE 比 measurement RMSE 更大，首先检查什么？
 
 ```text
-在这里填写。
+首先检查状态向量的排列是否与F、H矩阵一致，以及真实值、测量值和
+估计值在时间上是否对齐。然后检查Q、R、P和初始状态是否设置合理。
+R过大可能使滤波器忽略测量，Q过小可能使其过度相信错误的运动模型。
+还应检查RMSE计算是否比较了相同维度和相同时刻的数据。
 ```
 
 5. 当前实验为什么还不能称为完整的机器人多传感器融合？
 
 ```text
-在这里填写。
+当前实验只有一个模拟的二维位置传感器，使用固定采样周期和独立
+高斯噪声，没有融合编码器、IMU、GPS、激光雷达等不同传感器。
+同时没有处理不同采样频率、时间同步、坐标系转换、传感器偏置、
+非线性运动模型和异常测量。因此它只是二维位置卡尔曼滤波示例，
+还不能称为完整的机器人多传感器融合系统。
 ```
 
 ### 13.9 今日结论
@@ -1035,7 +1053,7 @@ R shape：
 用 3-5 句话总结今天学到的内容：
 
 ```text
-在这里填写。
+本实验将一维位置-速度 Kalman Filter 扩展到二维移动机器人状态 [px, py, vx, vy]，并使用带高斯噪声的二维位置作为观测。滤波后的轨迹比原始测量更加连续且接近真实轨迹，位置 RMSE 从 5.6701 降低到 2.5537，下降约 54.96%。实验说明 KF 能利用匀速运动模型和位置测量共同估计位置与速度。当前模型仍只包含单一位置传感器，下一步需要加入 odometry 漂移、低频 camera 观测和丢帧，形成线性多传感器融合。
 ```
 
 ### 13.10 面试表达练习
@@ -1043,11 +1061,11 @@ R shape：
 中文 30 秒版本：
 
 ```text
-在这里填写。
+我完成了一个二维移动机器人 Kalman Filter 定位实验，状态定义为位置和速度 [px, py, vx, vy]，输入是带噪声的二维位置测量。滤波器通过匀速运动模型预测状态，再利用位置测量进行更新。结果显示位置 RMSE 从 5.67 降低到 2.55，下降约 55%，说明滤波能够明显改善带噪轨迹估计。当前实验仍是单传感器状态估计，下一步会加入 odometry 和低频 camera measurement。
 ```
 
 英文 30 秒版本：
 
 ```text
-在这里填写。
+I implemented a 2D Kalman Filter for mobile robot trajectory estimation with state [px, py, vx, vy] and noisy position measurements. The filter combines a constant-velocity motion model with measurement updates, reducing the position RMSE from 5.67 to 2.55, an improvement of about 55 percent. This experiment establishes the state-estimation baseline, and the next step is to fuse drifting odometry with low-frequency camera measurements and dropout.
 ```
