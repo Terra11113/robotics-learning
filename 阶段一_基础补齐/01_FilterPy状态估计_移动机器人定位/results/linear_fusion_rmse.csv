@@ -1,4 +1,6 @@
 method,position_rmse,evaluation_steps
-odometry_only,4.096518020049454,120
-camera_measurement,2.3945823033214935,20
-kalman_fusion,2.0672395279609517,120
+odometry_only,4.078637075423078,120
+camera_measurement,2.8534837440540533,15
+kalman_fusion,3.0867287239010874,120
+,,
+kf - odometry,0.991908352,0.243196032
