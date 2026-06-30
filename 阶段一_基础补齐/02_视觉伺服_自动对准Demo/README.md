@@ -1,17 +1,17 @@
 # 02 视觉伺服：自动对准 Demo
 
-项目时间：2026-06-17 到 2026-06-21，Day 6 到 Day 10。
+项目周期：Day 6 到 Day 10。
 
 项目目标：
 
 ```text
-用视觉误差反馈和简单控制律，完成一个可展示的 closed-loop alignment demo。
+将已有的图像质量反馈 6-DOF 自动装调经验迁移到标准机器人视觉伺服，完成点特征 IBVS、手眼标定和鲁棒性仿真。
 ```
 
 最终项目标题：
 
 ```text
-Vision-Guided Closed-Loop Alignment for Robotic Systems
+Calibration-Aware Robust Visual Servoing for Precision Alignment
 ```
 
 ## 1. 为什么做这个项目
@@ -32,63 +32,66 @@ Vision-Guided Closed-Loop Alignment for Robotic Systems
 
 ## 2. 5 天执行计划
 
-| 日期 | 天数 | 学什么 | 怎么学 | 学明白的指标 | 当天验收 |
-|---|---:|---|---|---|---|
-| 2026-06-17 | Day 6 | 相机模型和 image error | 学像素坐标、图像中心、marker center、误差向量；不用先做真实标定 | 能解释 `error = image_center - marker_center` 为什么能驱动对准 | `notes/day06_camera_and_image_error.md` |
-| 2026-06-18 | Day 7 | ArUco marker 检测 | 用 OpenCV 生成 marker 或读取示例图；检测 corners；计算 center | 能拿到 marker 四个角点和中心点 | `scripts/01_detect_aruco_marker.py`；`figures/aruco_detection.png` |
-| 2026-06-19 | Day 8 | 2D 对准仿真 | 模拟平台位置和 marker center；用图像误差更新平台移动 | 能看到误差逐步下降 | `scripts/02_2d_alignment_simulation.py`；`figures/alignment_error_curve.png` |
-| 2026-06-20 | Day 9 | P / PID 控制对比 | 实现 P 控制，再加入 I/D；比较参数过小、合适、过大的曲线 | 能解释收敛慢、超调、震荡 | `scripts/03_pid_visual_servo.py`；`figures/pid_comparison.png` |
-| 2026-06-21 | Day 10 | 项目整理 | 整理图表、README、CV bullet、面试问答；可选阅读 `solvePnP` | 能把项目讲成视觉反馈闭环控制 | `notes/interview_qa.md`；README 中有图和英文简介 |
+| 天数 | 学习内容 | 工具选择 | 当天验收 |
+|---:|---|---|---|
+| Day 6 | 将已有 USTP 闭环装调映射为标准视觉伺服系统；区分 IBVS、PBVS、eye-in-hand 和 eye-to-hand | Markdown，不编码 | `notes/day06_visual_servo_system_mapping.md` |
+| Day 7 | 点特征 interaction matrix、IBVS 控制律、深度偏差实验 | Python Notebook | `notebooks/01_ibvs_point_feature_control.ipynb`、两张图和 CSV |
+| Day 8 | Eye-in-hand 手眼标定、`AX=XB`、变换方向、噪声与退化运动 | Python Notebook + OpenCV | `notebooks/02_hand_eye_calibration.ipynb`、两张图和 CSV |
+| Day 9 | 像素噪声、深度误差、延迟、丢帧、饱和、手眼误差与 Monte Carlo | 正式 Python 脚本 | `scripts/01_robust_ibvs_simulation.py`、三张图和 CSV |
+| Day 10 | 项目总结、结果复核、C++/实机迁移设计、CV 与面试表达 | Markdown | `notes/interview_qa.md` 和项目总结 |
 
 ## 3. 每天具体学习方法
 
-每天只做一个小闭环：
+四天的主线：
 
 ```text
-视觉输入
--> 提取误差
--> 控制律
--> 更新位置
--> 画误差曲线
+已有优化型视觉闭环
+-> 标准视觉伺服建模
+-> interaction matrix 与 IBVS
+-> 手眼标定与坐标变换
+-> 非理想条件下的鲁棒性评价
 ```
 
-不要在这 5 天内做：
+Day 6～9 不做：
 
 - ROS。
 - 真实机械臂。
-- 完整相机标定。
-- 完整 6D visual servoing。
+- 重复相机内参标定、基础 OpenCV、ArUco 入门或 P/PID 教程。
+- 未经 Python 验证就同时维护 C++ 数学实现。
+- 虚构机器人关节控制和真实硬件结果。
 
-可以在 Day 10 之后再扩展：
+Day 10 之后再扩展：
 
-- `solvePnP` 位姿估计。
-- IBVS vs PBVS。
-- PyBullet 机械臂仿真。
+- C++/Eigen 实时控制骨架。
+- PyBullet 或真实机械臂中的 eye-in-hand IBVS。
+- Robot Jacobian、关节速度与视野约束。
 
 ## 4. 最低完成标准
 
 必须有：
 
 ```text
-scripts/01_detect_aruco_marker.py
-scripts/02_2d_alignment_simulation.py
-scripts/03_pid_visual_servo.py
-figures/aruco_detection.png
-figures/alignment_error_curve.png
-figures/pid_comparison.png
+notebooks/01_ibvs_point_feature_control.ipynb
+notebooks/02_hand_eye_calibration.ipynb
+scripts/01_robust_ibvs_simulation.py
+figures/ibvs_feature_trajectories.png
+figures/hand_eye_error_vs_noise.png
+figures/robust_ibvs_success_rate.png
+results/robust_ibvs_metrics.csv
 notes/interview_qa.md
 ```
 
 能回答：
 
-- 什么是 image-space error？
-- 为什么 marker center 可以作为视觉反馈？
-- P 控制为什么能让误差下降？
-- `Kp` 太大会发生什么？
-- 视觉伺服和普通开环控制有什么区别？
+- 已有优化型视觉闭环与经典 IBVS 有什么区别？
+- Interaction matrix 描述什么局部关系？
+- 为什么平移相关项依赖深度？
+- OpenCV 手眼标定各输入输出属于什么 frame？
+- 标定误差、延迟和丢帧如何进入闭环？
+- 为什么阻尼、限速和安全 dropout 策略不能互相替代？
 
 ## 5. CV 表述
 
 ```text
-Built a vision-guided closed-loop alignment demo using marker-based visual feedback and PID-style control to simulate automatic robotic alignment, demonstrating image-space error convergence under different control gains.
+Developed a calibration-aware visual-servo simulation covering point-feature IBVS, eye-in-hand calibration, and robustness evaluation under depth bias, measurement noise, delay, dropout, velocity limits, and hand-eye uncertainty, building on prior 6-DOF vision-guided optical alignment experience.
 ```

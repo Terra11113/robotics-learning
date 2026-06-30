@@ -66,21 +66,21 @@ def generate_unicycle_ground_truth(
 ):
     """使用理想控制量生成真实控制序列和真实状态。"""
     times = np.arange(num_steps) * dt
-    controls = np.tile(
+    true_controls = np.tile(
         np.array([[true_linear_velocity, true_angular_velocity]]),
         (num_steps, 1),
     )
-    states = np.zeros((num_steps, 3))
-    states[0] = initial_state
+    true_states = np.zeros((num_steps, 3))
+    true_states[0] = initial_state
 
     for i in range(1, num_steps):
-        states[i] = unicycle_motion_model(
-            states[i - 1],
-            controls[i - 1],
+        true_states[i] = unicycle_motion_model(
+            true_states[i - 1],
+            true_controls[i - 1],
             dt,
         )
 
-    return times, controls, states
+    return times, true_controls, true_states
 
 
 def simulate_odometry_controls(
@@ -147,22 +147,26 @@ def simulate_camera_measurements(
 def create_ekf(
     initial_state,
     initial_covariance,
-    position_process_var,
-    heading_process_var,
+    position_process_variance,
+    heading_process_variance,
     camera_noise_std,
 ):
     """创建并配置状态为 [px, py, theta] 的 EKF。"""
+    initial_state = np.asarray(initial_state, dtype=float)
+    initial_covariance = np.asarray(initial_covariance, dtype=float)
+
+    if initial_state.shape != (3,):
+        raise ValueError("initial_state must have shape (3,)")
+    if initial_covariance.shape != (3, 3):
+        raise ValueError("initial_covariance must have shape (3, 3)")
+
     ekf = ExtendedKalmanFilter(dim_x=3, dim_z=2)
-    ekf.x = np.asarray(initial_state, dtype=float).copy()
-    ekf.P = ekf.P = np.diag([
-        50.0,
-        50.0,
-        0.03,
-    ])
+    ekf.x = initial_state.copy()
+    ekf.P = initial_covariance.copy()
     ekf.Q = np.diag([
-        position_process_var,
-        position_process_var,
-        heading_process_var,
+        position_process_variance,
+        position_process_variance,
+        heading_process_variance,
     ])
     ekf.R = np.eye(2) * camera_noise_std**2
     return ekf
@@ -175,16 +179,16 @@ def run_ekf_localization(
     dt,
     initial_state,
     initial_covariance,
-    position_process_var,
-    heading_process_var,
+    position_process_variance,
+    heading_process_variance,
     camera_noise_std,
 ):
     """使用里程计执行非线性预测，并在相机可用时执行 EKF 更新。"""
     ekf = create_ekf(
         initial_state=initial_state,
         initial_covariance=initial_covariance,
-        position_process_var=position_process_var,
-        heading_process_var=heading_process_var,
+        position_process_variance=position_process_variance,
+        heading_process_variance=heading_process_variance,
         camera_noise_std=camera_noise_std,
     )
 
@@ -203,12 +207,27 @@ def run_ekf_localization(
 
     for i in range(1, num_steps):
         state_before = ekf.x.copy()
-        control = odometry_controls[i - 1]
+        odometry_control = odometry_controls[i - 1]
 
         # 状态使用非线性函数预测，协方差使用预测前状态处的 Jacobian 传播。
-        jacobian = motion_jacobian(state_before, control, dt)
-        ekf.x = unicycle_motion_model(state_before, control, dt)
-        ekf.P = jacobian @ ekf.P @ jacobian.T + ekf.Q
+        motion_jacobian_matrix = motion_jacobian(
+            state_before,
+            odometry_control,
+            dt,
+        )
+        ekf.x = unicycle_motion_model(
+            state_before,
+            odometry_control,
+            dt,
+        )
+        ekf.P = (
+            motion_jacobian_matrix
+            @ ekf.P
+            @ motion_jacobian_matrix.T
+            + ekf.Q
+        )
+        # 抑制浮点运算造成的微小非对称，保持协方差矩阵结构明确。
+        ekf.P = 0.5 * (ekf.P + ekf.P.T)
         ekf.x_prior = ekf.x.copy()
         ekf.P_prior = ekf.P.copy()
 
@@ -250,10 +269,13 @@ def build_rmse_table(
         odometry_states[:, :2],
         true_states[:, :2],
     )
-    camera_position_rmse = compute_position_rmse(
-        camera_measurements[camera_available],
-        true_states[camera_available, :2],
-    )
+    if camera_available.any():
+        camera_position_rmse = compute_position_rmse(
+            camera_measurements[camera_available],
+            true_states[camera_available, :2],
+        )
+    else:
+        camera_position_rmse = np.nan
     ekf_position_rmse = compute_position_rmse(
         ekf_states[:, :2],
         true_states[:, :2],
@@ -336,8 +358,6 @@ def plot_trajectory(
     ax.axis("equal")
     fig.tight_layout()
     fig.savefig(output_path, dpi=150)
-    fig.show
-    # plt.close(fig)
 
 
 def plot_position_error(
@@ -382,8 +402,6 @@ def plot_position_error(
     ax.grid(True)
     fig.tight_layout()
     fig.savefig(output_path, dpi=150)
-    fig.show
-    # plt.close(fig)
 
 
 def plot_heading_error(
@@ -417,8 +435,6 @@ def plot_heading_error(
     ax.grid(True)
     fig.tight_layout()
     fig.savefig(output_path, dpi=150)
-    fig.show
-    # plt.close(fig)
 
 
 def main():
@@ -438,13 +454,18 @@ def main():
     camera_interval = 10
     dropout_probability = 0.20
 
-    position_process_var = (
+    position_process_variance = (
         linear_velocity_noise_std * dt
     ) ** 2
-    heading_process_var = (
+    heading_process_variance = (
         angular_velocity_noise_std * dt
     ) ** 2
-    initial_covariance = 50.0
+    # 初始位置不确定性较大；初始朝向已知得更准确。
+    initial_covariance = np.diag([
+        50.0,
+        50.0,
+        0.03,
+    ])
     random_seed = 42
 
     FIGURES_DIR.mkdir(parents=True, exist_ok=True)
@@ -489,8 +510,8 @@ def main():
         dt=dt,
         initial_state=initial_state,
         initial_covariance=initial_covariance,
-        position_process_var=position_process_var,
-        heading_process_var=heading_process_var,
+        position_process_variance=position_process_variance,
+        heading_process_variance=heading_process_variance,
         camera_noise_std=camera_noise_std,
     )
 
@@ -530,7 +551,6 @@ def main():
     )
 
     plt.show()
-
     print(rmse_table.to_string(index=False))
     print()
     print(f"Camera measurements available: {int(camera_available.sum())}")
