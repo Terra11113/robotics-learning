@@ -724,3 +724,65 @@ scripts/04_ekf_unicycle_model.py
 ```
 
 在 notebook 未完整运行前，不把框架直接包装成“已完成 Python 项目”。
+
+## 22. 一页式运行逻辑索引
+
+本节只整理 Notebook 的调用顺序和数据去向；模型公式、参数解释和实现要求见前文对应章节。
+
+```mermaid
+flowchart TD
+    A[实验参数] --> B[生成 true_controls]
+    B --> C[非线性模型积分]
+    C --> D[true_states]
+
+    B --> E[加入 odometry bias 和 noise]
+    E --> F[odometry_controls]
+    F --> G[非线性模型积分]
+    G --> H[odometry_states]
+
+    D --> I[低频采样 + noise + dropout]
+    I --> J[camera_measurements]
+    I --> K[camera_available]
+
+    F --> L[EKF nonlinear prediction]
+    J --> M[Camera update]
+    K --> M
+    L --> M
+    M --> N[ekf_states]
+
+    D --> O[RMSE 与绘图]
+    H --> O
+    J --> O
+    K --> O
+    N --> O
+```
+
+| 阶段 | 主要输入 | 主要输出 | 是否包含传感器误差 |
+|---|---|---|---|
+| Ground truth | 理想的 `v, omega` | `true_controls`, `true_states` | 否 |
+| Odometry 仿真 | `true_controls` | `odometry_controls` | bias + Gaussian noise |
+| Odometry-only | `odometry_controls` | `odometry_states` | 是，且误差随积分累积 |
+| Camera 仿真 | `true_states[:, :2]` | `camera_measurements`, `camera_available` | noise + dropout |
+| EKF 融合 | odometry control + camera position | `ekf_states` | predict 保持连续，update 抑制漂移 |
+| 结果评估 | truth、odometry、camera、EKF | RMSE、CSV、三张图 | 使用相同时间索引比较 |
+
+单个 EKF 时间步的固定顺序：
+
+```text
+读取 odometry control
+        -> 保存预测前状态
+        -> 用预测前状态计算 motion Jacobian F
+        -> 用 nonlinear motion model 更新 x
+        -> 用 P = F P F^T + Q 更新协方差
+        -> camera 可用时执行 update
+        -> normalize theta
+        -> 保存当前 ekf state
+```
+
+三条轨迹的最短区分：
+
+```text
+true_states      = 理想控制积分，作为答案
+odometry_states  = 带误差控制积分，不做修正
+ekf_states       = 带误差控制预测，camera 可用时修正
+```
